@@ -253,7 +253,7 @@ func (this *Lbd_lib) Startup(default_config_file string, default_log_file string
 
 	root_cmd.PersistentFlags().StringVarP(&this.Config_file, "config-file", "c", this.default_config_file, "configuration file")
 	root_cmd.PersistentFlags().StringVarP(&this.Log_file, "log-file", "l", this.default_log_file, "log file")
-	root_cmd.PersistentFlags().Uint32VarP(&this.Log_level, "log-level", "v", 0, "log level: 0=debug 200=info 500=error")
+	root_cmd.PersistentFlags().Uint32VarP(&this.Log_level, "log-level", "v", 200, "log level: 0=debug 200=info 500=error")
 
 	if ret := this.cobra_commands_setup(root_cmd); ret != nil {
 		return ret, nil
