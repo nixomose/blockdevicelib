@@ -7,6 +7,7 @@ import (
 	"container/list"
 	"log"
 	"log/syslog"
+	"os"
 
 	"github.com/nixomose/nixomosegotools/tools"
 	"github.com/nixomose/zosbd2goclient/zosbd2cmdlib/zosbd2interfaces"
@@ -21,7 +22,10 @@ func (this *Lbd_lib) add_device_status(root_cmd *cobra.Command) {
 		Long:  `device-status will list all the active block devices and their configuration settings.`,
 		Args:  cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			this.device_status()
+			if ret := this.device_status(); ret != nil {
+				os.Exit(1)
+				return
+			}
 		},
 	}
 	root_cmd.AddCommand(cmd_device_status)
@@ -41,11 +45,16 @@ func (this *Lbd_lib) add_storage_status(root_cmd *cobra.Command) {
 			storage_file, err = cmd.Flags().GetString(TXT_STORAGE_FILE)
 			if err != nil {
 				tools.Error(this.log, err)
+				os.Exit(1)
+				return
 			} else {
 				/* we just need enough default device settings so we can open the file and read the header
 				   directio on allows us to read a big enough chunk to get the header. */
 				var device = this.New_block_device("", 0, storage_file, true, false, PHYSICAL_BLOCK_SIZE, 0, 0, 0, false, "", false, false)
-				this.storage_status(device)
+				if ret := this.storage_status(device); ret != nil {
+					os.Exit(1)
+					return
+				}
 			}
 		},
 	}
@@ -78,7 +87,10 @@ func (this *Lbd_lib) add_destroy_block_device(root_cmd *cobra.Command) {
 				return
 			}
 			var device = this.New_block_device(device_name, 0, "", false, false, 1, 0, 0, 0, false, "", false, false)
-			this.destroy_block_device(device)
+			if ret := this.destroy_block_device(device); ret != nil {
+				os.Exit(1)
+				return
+			}
 		},
 	}
 	cmd_destroy_block_device.Flags().StringVarP(&device_name, TXT_DEVICE_NAME, "d", "", "name of the block device to create")
@@ -93,7 +105,10 @@ func (this *Lbd_lib) add_destroy_all_block_devices(root_cmd *cobra.Command) {
 		Long:  `this command will cause all existing block devices to cleanly hang up on the userspace applictions servicing those block devices.`,
 		Args:  cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			this.destroy_all_block_devices()
+			if ret := this.destroy_all_block_devices(); ret != nil {
+				os.Exit(1)
+				return
+			}
 		},
 	}
 	root_cmd.AddCommand(cmd_destroy_all_block_devices)
@@ -110,6 +125,8 @@ func (this *Lbd_lib) add_diag_commands(root_cmd *cobra.Command) {
 		Args:  cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			tools.Error(this.log, "please specify a subcommand for diag")
+			os.Exit(1)
+			return
 		}}
 
 	root_cmd.AddCommand(cmd_diag)
@@ -125,6 +142,8 @@ func (this *Lbd_lib) add_dump(cmd_diag *cobra.Command) {
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			tools.Error(this.log, "please specify a subcommand for dump")
+			os.Exit(1)
+			return
 		}}
 
 	cmd_diag.AddCommand(cmd_dump)
@@ -142,7 +161,10 @@ func (this *Lbd_lib) add_dump_header(root_cmd *cobra.Command) {
 		Long:  `this command will pretty print the contents of the backing store header.`,
 		Args:  cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			this.Dump_header(this.catalog, device_name)
+			if ret := this.Dump_header(this.catalog, device_name); ret != nil {
+				os.Exit(1)
+				return
+			}
 		},
 	}
 	cmd_dump_header.Flags().StringVarP(&device_name, TXT_DEVICE_NAME, "d", "", "name of the block device to dump the header of")
@@ -162,9 +184,13 @@ func (this *Lbd_lib) add_dump_block_header(root_cmd *cobra.Command) {
 			var err, block_num = tools.Stringtouint32(args[0])
 			if err != nil {
 				tools.Error(this.log, "error parsing command line for block number to dump: ", err)
+				os.Exit(1)
 				return
 			}
-			this.Dump_block_header(this.catalog, device_name, block_num)
+			if ret := this.Dump_block_header(this.catalog, device_name, block_num); ret != nil {
+				os.Exit(1)
+				return
+			}
 		},
 	}
 	cmd_dump_block_header.Flags().StringVarP(&device_name, TXT_DEVICE_NAME, "d", "", "name of the block device to dump the header of")
@@ -183,9 +209,13 @@ func (this *Lbd_lib) add_dump_block(root_cmd *cobra.Command) {
 			var err, block_num = tools.Stringtouint32(args[0])
 			if err != nil {
 				tools.Error(this.log, "error parsing command line for block number to dump: ", err)
+				os.Exit(1)
 				return
 			}
-			this.Dump_block(this.catalog, device_name, block_num)
+			if ret := this.Dump_block(this.catalog, device_name, block_num); ret != nil {
+				os.Exit(1)
+				return
+			}
 		},
 	}
 	cmd_dump_block.Flags().StringVarP(&device_name, TXT_DEVICE_NAME, "d", "", "name of the block device to dump the block of")
@@ -203,6 +233,8 @@ func (this *Lbd_lib) add_catalog_commands(root_cmd *cobra.Command) {
 		Args:  cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			tools.Error(this.log, "please specify a subcommand for catalog")
+			os.Exit(1)
+			return
 		}}
 
 	root_cmd.AddCommand(cmd_catalog)
@@ -226,9 +258,15 @@ func (this *Lbd_lib) add_catalog_list(root_cmd *cobra.Command) {
 		Args:  cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			if device_name == "" {
-				this.catalog_list_all(this.catalog)
+				if ret := this.catalog_list_all(this.catalog); ret != nil {
+					os.Exit(1)
+					return
+				}
 			} else {
-				this.catalog_list_device(this.catalog, device_name)
+				if ret := this.catalog_list_device(this.catalog, device_name); ret != nil {
+					os.Exit(1)
+					return
+				}
 			}
 		},
 	}
@@ -269,7 +307,10 @@ func (this *Lbd_lib) add_catalog_add(root_cmd *cobra.Command) {
 			var device = this.New_block_device(device_name, device_size, storage_file, directio, sync,
 				alignment, stree_value_size, calculated_stree_node_size, additional_nodes_per_block,
 				mount, mountpoint, false, false)
-			this.catalog_add(this.catalog, device)
+			if ret := this.catalog_add(this.catalog, device); ret != nil {
+				os.Exit(1)
+				return
+			}
 		},
 	}
 	cmd_catalog_add.Flags().StringVarP(&device_name, TXT_DEVICE_NAME, "d", "", "name of the block device to create")
@@ -299,7 +340,10 @@ func (this *Lbd_lib) add_catalog_delete(root_cmd *cobra.Command) {
 		Long:  `this command will permanently destroy all data associated with the specified block device and remove it from the catalog.`,
 		Args:  cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			this.catalog_delete(this.catalog, device_name)
+			if ret := this.catalog_delete(this.catalog, device_name); ret != nil {
+				os.Exit(1)
+				return
+			}
 		},
 	}
 	cmd_catalog_delete.Flags().StringVarP(&device_name, TXT_DEVICE_NAME, "d", "", "name of the block device to delete")
@@ -358,14 +402,17 @@ func (this *Lbd_lib) add_start_device_from_catalog(root_cmd *cobra.Command) {
 		Run: func(cmd *cobra.Command, args []string) {
 			if device_ramdisk && stree_ramdisk {
 				tools.Error(this.log, "you can only select one of device-ramdisk and stree-ramdisk")
+				os.Exit(1)
 				return
 			}
 			if len(device_name) > 0 && all {
 				tools.Error(this.log, "you can only select one of device name and all")
+				os.Exit(1)
 				return
 			}
 			if len(device_name) == 0 && (all == false) {
 				tools.Error(this.log, "you must select one of device name and all")
+				os.Exit(1)
 				return
 			}
 
@@ -373,6 +420,7 @@ func (this *Lbd_lib) add_start_device_from_catalog(root_cmd *cobra.Command) {
 			var ret tools.Ret
 			ret = this.process_pipeline_command_line_params(this.data_pipeline, cmd)
 			if ret != nil {
+				os.Exit(1)
 				return
 			}
 
@@ -387,6 +435,7 @@ func (this *Lbd_lib) add_start_device_from_catalog(root_cmd *cobra.Command) {
 				ret = this.catalog_start_device(this.catalog, device_name, force, this.data_pipeline, device_ramdisk, stree_ramdisk, dragons)
 			}
 			if ret != nil {
+				os.Exit(1)
 				return // it has already logged the error.
 			}
 		},
@@ -417,10 +466,12 @@ func (this *Lbd_lib) add_stop_device_from_catalog(root_cmd *cobra.Command) {
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(device_name) > 0 && all {
 				tools.Error(this.log, "you can only select one of device name and all")
+				os.Exit(1)
 				return
 			}
 			if len(device_name) == 0 && (all == false) {
 				tools.Error(this.log, "you must select one of device name and all")
+				os.Exit(1)
 				return
 			}
 			var ret tools.Ret
@@ -430,6 +481,7 @@ func (this *Lbd_lib) add_stop_device_from_catalog(root_cmd *cobra.Command) {
 				ret = this.catalog_shutdown_device(this.catalog, device_name)
 			}
 			if ret != nil {
+				os.Exit(1)
 				return // it has already logged the error.
 			}
 		},
@@ -450,6 +502,7 @@ func (this *Lbd_lib) add_catalog_set_commands(cmd_catalog *cobra.Command) {
 		Args:  cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			tools.Error(this.log, "please specify a subcommand for set")
+			os.Exit(1)
 		}}
 
 	cmd_catalog.AddCommand(cmd_catalog_set)
@@ -465,7 +518,10 @@ func (this *Lbd_lib) add_set_catalog_include_exclude(cmd_catalog_set *cobra.Comm
 		Short: "set a catalog entry to include on start all",
 		Args:  cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			this.set_catalog_entry_exclude_device(this.catalog, device_name, false)
+			if ret := this.set_catalog_entry_exclude_device(this.catalog, device_name, false); ret != nil {
+				os.Exit(1)
+				return
+			}
 		}}
 	cmd_catalog_set_include.Flags().StringVarP(&device_name, TXT_DEVICE_NAME, "d", "", "name of the block device to set include on")
 	cmd_catalog_set_include.MarkFlagRequired(TXT_DEVICE_NAME)
@@ -475,7 +531,10 @@ func (this *Lbd_lib) add_set_catalog_include_exclude(cmd_catalog_set *cobra.Comm
 		Short: "set a catalog entry to exclude on start all",
 		Args:  cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			this.set_catalog_entry_exclude_device(this.catalog, device_name, true)
+			if ret := this.set_catalog_entry_exclude_device(this.catalog, device_name, true); ret != nil {
+				os.Exit(1)
+				return
+			}
 		}}
 	cmd_catalog_set_exclude.Flags().StringVarP(&device_name, TXT_DEVICE_NAME, "d", "", "name of the block device to set exclude on")
 	cmd_catalog_set_exclude.MarkFlagRequired(TXT_DEVICE_NAME)
