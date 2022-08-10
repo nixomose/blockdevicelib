@@ -242,8 +242,8 @@ func (this *Lbd_lib) check_requirements() tools.Ret {
 func (this *Lbd_lib) Startup(default_config_file string, default_log_file string,
 	default_catalog_file string) (tools.Ret, *cobra.Command) {
 	var root_cmd = &cobra.Command{Use: this.application_name,
-		Short: "lbd creates a block device backed by a file or a block device.",
-		Long: "local block device allows you to define a catalog of block devices defining " +
+		Short: this.application_name + " creates a block device backed by a file or a block device.",
+		Long: this.application_name + " allows you to define a catalog of block devices defining " +
 			"their size and backing store and lets you easily start up and shut down these block " +
 			"devices. requires zosbd2 - https://github.com/nixomose/zosbd2"}
 
